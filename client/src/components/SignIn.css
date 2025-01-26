@@ -1,4 +1,4 @@
-body {
+/* body {
     margin: 0;
     font-family: Arial, sans-serif;
   }
@@ -91,6 +91,132 @@ body {
   }
   
   .signup-link a:hover {
+    text-decoration: underline;
+  }
+   */
+   body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f3f4f6;
+  }
+  
+  .signin-container {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #a6c0fe, #f68084);
+  }
+  
+  .signin-section {
+    width: 100%;
+    max-width: 450px;
+    background-color: #fff;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    padding: 35px;
+    text-align: center;
+  }
+  
+  .signin-content {
+    color: #333;
+  }
+  
+  .signin-form {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  .signin-form-wrapper {
+    margin-top: 30px;
+  }
+  
+  .signin-form-container h1 {
+    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #ff6f61;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+  }
+  
+  .signin-input-group {
+    margin-bottom: 25px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .signin-input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #555;
+  }
+  
+  .signin-input-group input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    color: #333;
+    background-color: #f7f7f7;
+    transition: all 0.3s ease;
+  }
+  
+  .signin-input-group input:focus {
+    border-color: #ff6f61;
+    outline: none;
+    background-color: #fff6f2;
+  }
+  
+  .gender-selection {
+    display: flex;
+    justify-content: space-evenly;
+    margin-bottom: 30px;
+  }
+  
+  .gender-selection .option {
+    display: flex;
+    align-items: center;
+    color: #444;
+  }
+  
+  .gender-selection input {
+    margin-right: 5px;
+  }
+  
+  .signin-button {
+    width: 100%;
+    padding: 14px;
+    background-color: #ff6f61;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 18px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .signin-button:hover {
+    background-color: #ff3f2f;
+  }
+  
+  .signin-link {
+    margin-top: 20px;
+    font-size: 15px;
+  }
+  
+  .signin-link a {
+    color: #ff6f61;
+    text-decoration: none;
+  }
+  
+  .signin-link a:hover {
     text-decoration: underline;
   }
   

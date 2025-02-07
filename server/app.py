@@ -1,10 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import jwt
+import requests
+import datetime
+from flask_cors import CORS
+from mlTrial import try_on_clothes
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)
+
+# Configure secret key for JWT
+app.config['SECRET_KEY'] = 'your_secret_key'  # Change to a secure key
 
 # Directory to store uploaded images
 UPLOAD_FOLDER = 'uploads'
@@ -18,13 +28,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize SQLAlchemy
 db = SQLAlchemy(app)
 
-# Define models
+# Define User Model
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
+    username = db.Column(db.String(50), unique=True, nullable=False)
     password = db.Column(db.String(100), nullable=False)
 
+# Define Image Model
 class Image(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
@@ -36,100 +48,113 @@ class Image(db.Model):
 with app.app_context():
     db.create_all()
 
-# Helper function to register a user
-def register_user(email, name, password):
-    try:
-        existing_user = User.query.filter_by(email=email).first()
-        if existing_user:
-            return {"message": "User already exists", "status": 0}
-
-        new_user = User(email=email, name=name, password=password)
-        db.session.add(new_user)
-        db.session.commit()
-        return {"message": "User registered successfully", "status": 1}
-    except Exception as e:
-        return {"message": str(e), "status": -1}
-
-# API to register a user
+# Register User
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
     email = data.get('email')
+    username = data.get('username')
     name = data.get('name')
     password = data.get('password')
 
-    if not email or not name or not password:
+    if not email or not username or not name or not password:
         return jsonify({"message": "All fields are required"}), 400
 
-    result = register_user(email, name, password)
-    return jsonify(result)
+    # Check if user already exists
+    existing_user = User.query.filter((User.email == email) | (User.username == username)).first()
+    if existing_user:
+        return jsonify({"message": "User with this email or username already exists"}), 400
 
-#function to login
+    hashed_password = generate_password_hash(password)
+
+    new_user = User(email=email, username=username, name=name, password=hashed_password)
+    db.session.add(new_user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered successfully", "status": 1})
+
+# Login User
 @app.route('/login', methods=['POST'])
 def login():
-    # Get username and password from request
-    username = request.form.get('username')
-    password = request.form.get('password')
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
 
-    # Validate input
     if not username or not password:
         return jsonify({"message": "Username and password are required"}), 400
 
-    # Check user in database
-    con, cursor = connect()
-    if con is None:
-        return jsonify({"message": "Database connection error"}), 500
-
-    # Fetch user data from the database
-    cursor.execute("SELECT password FROM User WHERE username = ?", (username,))
-    result = cursor.fetchone()
-
-    if result:
-        stored_password = result[0]
-
-        # Verify the password
-        if check_password_hash(stored_password, password):
-            session['user'] = username  # Create session for logged-in user
-            return jsonify({"message": "Login successful", "username": username}), 200
-        else:
-            return jsonify({"message": "Invalid password"}), 401
-    else:
+    # Check if user exists
+    user = User.query.filter_by(username=username).first()
+    if not user:
         return jsonify({"message": "User not found"}), 404
 
-        
-# API to upload images
+    # Verify password
+    if not check_password_hash(user.password, password):
+        return jsonify({"message": "Invalid password"}), 401
+
+    # Generate JWT token
+    token = jwt.encode(
+        {"user_id": user.id, "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)},
+        app.config['SECRET_KEY'],
+        algorithm="HS256"
+    )
+
+    return jsonify({"message": "Login successful", "token": token, "username": username}), 200
+
+# Upload Image (Virtual Try-On)
 @app.route('/upload', methods=['POST'])
 def upload_image():
     user_id = request.form.get('user_id')
-    image_type = request.form.get('image_type')  # 'user' or 'dress'
 
-    if not image_type:
-        return jsonify({"message": "Image type is required"}), 400
+    # Define the upload directories
+    person_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'person')
+    dress_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'dress')
 
-    file = request.files.get('file')
-    if file:
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
+    # Create directories if they don't exist
+    os.makedirs(person_dir, exist_ok=True)
+    os.makedirs(dress_dir, exist_ok=True)
 
-        new_image = Image(user_id=user_id, image_type=image_type, path=filepath)
-        db.session.add(new_image)
-        db.session.commit()
+    # Get uploaded files
+    person_file = request.files.get('person_image')
+    dress_file = request.files.get('dress_image')
 
-        return jsonify({"message": "Image uploaded successfully", "path": filepath}), 201
+    if not person_file or not dress_file:
+        return jsonify({"message": "Both person and dress images are required"}), 400
 
-    image_url = request.form.get('image_url')
-    if image_url:
-        new_image = Image(user_id=user_id, image_type=image_type, url=image_url)
-        db.session.add(new_image)
-        db.session.commit()
+    # Save person image
+    person_filename = secure_filename(person_file.filename)
+    person_path = os.path.join(person_dir, person_filename)
+    person_file.save(person_path)
 
-        return jsonify({"message": "Image URL saved successfully", "url": image_url}), 201
+    # Save dress image
+    dress_filename = secure_filename(dress_file.filename)
+    dress_path = os.path.join(dress_dir, dress_filename)
+    dress_file.save(dress_path)
 
-    return jsonify({"message": "No file or URL provided"}), 400
+    # Call the Virtual Try-On API
+    result_url = try_on_clothes(person_path, dress_path)
+    print("ML Model Result URL:", result_url)
 
+    # Download processed image from URL
+    response = requests.get(result_url, stream=True)
+    if response.status_code == 200:
+        output_filename = os.path.basename(result_url)  
+        output_dir = os.path.join(app.config['UPLOAD_FOLDER'], "output")
+        os.makedirs(output_dir, exist_ok=True)
 
+        output_path = os.path.join(output_dir, output_filename)
 
-# Run the app
+        # Save the processed image to the output folder
+        with open(output_path, 'wb') as file:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+
+        print("Downloaded Image Saved At:", output_path)
+
+        # Return the processed image file directly
+        return send_file(output_path, mimetype='image/jpeg')
+
+    return jsonify({"message": "Failed to download processed image"}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

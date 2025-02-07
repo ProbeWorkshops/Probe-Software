@@ -8,7 +8,7 @@ from config import PROD
 def connect():
     try:
         if PROD == "Yes":
-            db_path = "/home/site/wwwroot/database.db"
+            db_path = ""#path to your db
         else:
             db_path = "data.db"
         con = sqlite3.connect(db_path)

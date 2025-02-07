@@ -7,104 +7,60 @@ import './SignIn.css';
 
 function SignUp() {
   const navigate = useNavigate();
-  const Username = useRef();
-  const Password = useRef();
-  const Email = useRef();
+  const nameRef = useRef();
+  const emailRef = useRef();
+  const passwordRef = useRef();
 
-  // sign up function
-  // async function signup(event) {
-  //   event.preventDefault();
-
-  //   try {
-  //     const username = Username.current.value;
-  //     const password = Password.current.value;
-  //     const email = Email.current.value;
-  //     const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
-
-  //     if (!username) {
-  //       toast.error("Please enter your username!");
-  //       return;
-  //     }
-  //     if (!password) {
-  //       toast.error("Please enter your password!");
-  //       return;
-  //     }
-
-  //     if (!selectedGender) {
-  //       toast.error("Please select a gender!");
-  //       return;
-  //     }
-
-  //     console.log('Username:', username);
-  //     console.log('Selected Gender:', selectedGender);
-
-  //     toast.info(`Successfully Registered !`, {
-  //       onClose: () => {
-  //         navigate('/home');
-  //       },
-  //     });
-  //   } catch (error) {
-  //     console.error('Error:', error);
-  //     toast.error("Invalid Credentials!");
-  //   }
-  // }
   async function signup(event) {
     event.preventDefault();
 
     try {
-        const username = Username.current.value;
-        const password = Password.current.value;
-        const email = Email.current.value;
-        const selectedGender = document.querySelector('input[name="gender"]:checked')?.value;
+      const name = nameRef.current.value;
+      const email = emailRef.current.value;
+      const password = passwordRef.current.value;
 
-        // Basic validation
-        if (!username) {
-            toast.error("Please enter your username!");
-            return;
-        }
-        if (!password) {
-            toast.error("Please enter your password!");
-            return;
-        }
-        if (!email) {
-            toast.error("Please enter your email!");
-            return;
-        }
-        if (!selectedGender) {
-            toast.error("Please select a gender!");
-            return;
-        }
+      // Basic validation
+      if (!name) {
+        toast.error("Please enter your name!");
+        return;
+      }
+      if (!email) {
+        toast.error("Please enter your email!");
+        return;
+      }
+      if (!password) {
+        toast.error("Please enter your password!");
+        return;
+      }
 
-        // Prepare the data for POST request
-        const data = {
-            username,
-            password,
-            email,
-            gender: selectedGender,
-        };
+      // Prepare the data for POST request
+      const data = {
+        name,
+        email,
+        password,
+      };
 
-        // Make the POST request using Axios
-        const response = await axios.post('http://localhost:3000/signup', data);
+      // Make the POST request using Axios
+      const response = await axios.post('http://127.0.0.1:5000/register', data);
 
-        // Handle the response
-        if (response.status === 200) {
-            console.log('Response from server:', response.data);
-
-            toast.success("Successfully Registered!", {
-                onClose: () => {
-                    navigate('/home');
-                },
-            });
-        } else {
-            console.error('Error from server:', response.data);
-            toast.error(response.data.message || "Registration failed!");
-        }
+      // Handle the response
+      if (response.data.status === 1) {
+        console.log(response.data)
+        toast.success(response.data.message, {
+          onClose: () => {
+            navigate('/');
+          },
+        });
+      } else {
+        toast.error(response.data.message || "Registration failed!");
+      }
     } catch (error) {
-        console.error('Error:', error);
-        toast.error(error.response?.data?.message || "Something went wrong. Please try again later.");
+      console.error('Error:', error);
+      toast.error(
+        error.response?.data?.message || "Something went wrong. Please try again later."
+      );
     }
-}
-
+  }
 
   return (
     <div className="signin-container">
@@ -116,34 +72,42 @@ function SignUp() {
           <div className="signin-form-wrapper">
             <div className="signin-form-container">
               <h1>Create your account</h1>
-              <form onSubmit={signup} className='signin-form'>
+              <form onSubmit={signup} className="signin-form">
                 <div className="signin-input-group">
-                  <label htmlFor="email">Username</label>
-                  <input ref={Username} type="text" name="email" id="email" placeholder="Probe@ecea"  />
+                  <label htmlFor="name">Name</label>
+                  <input
+                    ref={nameRef}
+                    type="text"
+                    id="name"
+                    placeholder="Enter your name"
+                  />
                 </div>
                 <div className="signin-input-group">
                   <label htmlFor="email">Email</label>
-                  <input ref={Email} type="text" name="email" id="email" placeholder="Probe@ecea"  />
+                  <input
+                    ref={emailRef}
+                    type="email"
+                    id="email"
+                    placeholder="Enter your email"
+                  />
                 </div>
                 <div className="signin-input-group">
-                    <label htmlFor="password">Password</label>
-                    <input ref={Password} type="password" id="password" placeholder="Enter your password" />
+                  <label htmlFor="password">Password</label>
+                  <input
+                    ref={passwordRef}
+                    type="password"
+                    id="password"
+                    placeholder="Enter your password"
+                  />
                 </div>
 
-
-                <div className="gender-selection">
-                  <label className="option">
-                    <input type="radio" name="gender" value="male" /> Male
-                  </label>
-                  <label className="option">
-                    <input type="radio" name="gender" value="female" /> Female
-                  </label>
-                </div>
-
-                <button type="submit" className="signin-button">Sign in</button>
+                <button type="submit" className="signin-button">
+                  Sign Up
+                </button>
 
                 <p className="signin-link">
-                  Already Have account ? <a onClick={() => navigate('/')}>Sign In</a>
+                  Already have an account?{' '}
+                  <a onClick={() => navigate('/')}>Sign In</a>
                 </p>
               </form>
             </div>
